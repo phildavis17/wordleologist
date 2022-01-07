@@ -136,13 +136,16 @@ class Wordle:
         """Returns the word with the highest frequency score, whether or not it could be the target word."""
         freq = self.frequencies
         best_sieve = (0, "")
+        # TODO: break ties randomly.
         for word in self.FIVE_LETTER_WORDS:
             best_sieve = max(best_sieve, (self._get_frequency_score(word, freq=freq), word))
         return best_sieve
     
     def find_best_guess(self):
+        """Returns the word with the highest frequency score that could also be the target word."""
         freq = self.frequencies
         best_guess = (0, "")
+        # TODO: break ties randomly.
         for word in self.possible_words:
             best_guess = max(best_guess, (self._get_frequency_score(word, freq), word))
         return best_guess
