@@ -1,22 +1,72 @@
 import string
+import random
+import rich
 from collections import Counter
+from enum import Enum
 from pathlib import Path
 from typing import Iterable, Optional
-from rich.console import Console
-from rich.theme import Theme
+#from rich.console import Console
+#from rich.theme import Theme
 
 SCRABBLE_WORDS_PATH = Path(__file__).parent / "data" / "Collins Scrabble Words (2019).txt"
 
 with open(SCRABBLE_WORDS_PATH) as scrabble_words:
-    five_letter_words = {word.strip() for word in scrabble_words.readlines() if len(word.strip()) == 5}
+    SCRABBLE_WORDS = {word.strip() for word in scrabble_words.readlines()}
+    #five_letter_words = {word.strip() for word in scrabble_words.readlines() if len(word.strip()) == 5}
 
+class OutputStyle(Enum):
+    GREEN = "green"
+    YELLOW = "yellow"
+    GRAY = "dim"
+
+class BadWordException(Exception):
+    pass
 
 class Wordle:
+    FIVE_LETTER_WORDS = {word for word in SCRABBLE_WORDS if len(word) == 5}
     def __init__(self, target_word: Optional[str] = None) -> None:
         self.target_word = target_word
         self.possible_letters = {x: set(string.ascii_uppercase) for x in range(5)}
         self.included: set = set()
         self.excluded: set = set()
+
+    @classmethod
+    def new_random_wordle(cls) -> "Wordle":
+        return Wordle(random.choice(tuple(cls.FIVE_LETTER_WORDS)))
+    
+    def _build_guess_evaluation(self, guess: str) -> tuple:
+        return tuple([self._evaluate_guess_char(i, c) for i, c in enumerate(guess)])
+    
+    def print_guess_response(self, guess: str) -> None:
+        response = []
+        for style, char in zip(self._build_guess_evaluation(guess), guess):
+            response.append(f"[{style}]")
+            response.append(f"{char}")
+            response.append("[/]")
+        rich.print("".join(response))
+        
+
+    def _validate_guess(self, guess: str) -> str:
+        if len(guess) != 5:
+            raise ValueError(f"Improper guess length {guess}")
+        if self.target_word is None:
+            raise RuntimeError(f"Target word not set")
+        if guess.upper() not in self.FIVE_LETTER_WORDS:
+            raise BadWordException(f"{guess} is not an accepted word.")
+        return guess.upper()
+    
+    def _evaluate_guess_char(self, index: int, guess: str) -> str:
+        if self.target_word[index] == guess:
+            return OutputStyle.GREEN.value
+        elif guess in self.target_word:
+            return OutputStyle.YELLOW.value
+        else:
+            return OutputStyle.GRAY.value
+
+
+        
+
+
 
     @property
     def frequencies(self) -> Counter:
@@ -29,7 +79,7 @@ class Wordle:
     @property
     def possible_words(self) -> set:
         """The set of words that can possibly be the target word, based on current information."""
-        remaining_words = Wordle._filter_by_inlcuded(self.included, five_letter_words)
+        remaining_words = Wordle._filter_by_inlcuded(self.included, self.FIVE_LETTER_WORDS)
         for index, letters in self.possible_letters.items():
             remaining_words = Wordle._filter_by_letter(index, letters, remaining_words)
         return remaining_words
@@ -86,7 +136,7 @@ class Wordle:
         """Returns the word with the highest frequency score, whether or not it could be the target word."""
         freq = self.frequencies
         best_sieve = (0, "")
-        for word in five_letter_words:
+        for word in self.FIVE_LETTER_WORDS:
             best_sieve = max(best_sieve, (self._get_frequency_score(word, freq=freq), word))
         return best_sieve
     
@@ -109,22 +159,33 @@ class Wordle:
 
 
 def test():
-    w = Wordle()
-    w.assign_at_index(1, "A")
+    w = Wordle.new_random_wordle()
+    print(w.print_guess_response("SOARE"))
+    #w.assign_at_index(0, "A")
+    #w.assign_at_index(1, "L")
     #w.assign_at_index(2, "N")
-    w.exclude("SOREYI")
-    w.include("ALNB")
-    w.exclude_at_index(0, "LN")
+    #w.assign_at_index(3, "I")
+    #w.assign_at_index(4, "Y")
+    #w.exclude("SOARINDU")
+    #w.include("ELYG")
+    #w.exclude_at_index(0, "LG")
     #w.exclude_at_index(1, "")
-    w.exclude_at_index(2, "AB")
-    w.exclude_at_index(3, "L")
-    w.exclude_at_index(4, "NA")
+    #w.exclude_at_index(2, "")
+    #w.exclude_at_index(3, "E")
+    #w.exclude_at_index(4, "E")
     #print(w.included)
-    print(w.possible_words)
+    #print(w.possible_words)
     #print(w.frequencies)
     #for t in w.evaluate_guesses_by_frequency():
     #    print(t)
-    print(w.find_best_guess())
+    #if len(w.possible_words) > 100:
+    #    print(w.find_best_sieve())
+    #elif len(w.possible_words) >10:
+    #    print(w.find_best_guess())
+    #else:
+    #    print(w.possible_words)
+    #    print(w.find_best_guess())
+    
 
 if __name__ == "__main__":
     test()
