@@ -1,10 +1,11 @@
+import os
 import string
 import random
 import rich
 from collections import Counter
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 #from rich.console import Console
 #from rich.theme import Theme
 
@@ -13,10 +14,59 @@ SCRABBLE_WORDS_PATH = Path(__file__).parent / "data" / "Collins Scrabble Words (
 with open(SCRABBLE_WORDS_PATH) as scrabble_words:
     SCRABBLE_WORDS = {word.strip() for word in scrabble_words.readlines()}
 
+
+class ColorRange:
+    """A one dimensional """
+    def __init__(self, min: int = 0, max: int = 100, min_color: Tuple[int] = None, max_color: Tuple[int] = None) -> None:
+        self.min: int = min
+        self.max: int = max
+        self.min_color: tuple = min_color
+        self.max_color: tuple = max_color
+        if self.min_color is None:
+            self.min_color = (0, 0, 0)
+        if self.max_color is None:
+            self.max_color = (255, 255, 255)
+    
+    def color_from_number(self, n: int) -> tuple:
+        if not self.min <= n <= self.max:
+            raise ValueError(f"{n} exceeds range bounds ({self.min}, {self.max})")
+        
+
+    def color_at_position(self, pos: float) -> tuple:
+        min_r, min_g, min_b = self.min_color
+        max_r, max_b, max_b = self.max_color
+
+    def __repr__(self) -> str:
+        return f"ColorRange({self.min}, {self.max})"
+
+    def __str__(self) -> str:
+        pass
+
+class ColorBox:
+    def __init__(self) -> None:
+        self
+
+
+
+class OutputColor(Enum):
+    """
+    This Enum describes the colors used to display guesses.
+    """
+    GREEN = (0, 208, 0)
+    YELLOW = (208, 208, 0)
+    GRAY = (98, 98, 98)
+    WHITE = (208, 208, 208)
+
+
 class OutputStyle(Enum):
-    GREEN = "green"
-    YELLOW = "yellow"
-    GRAY = "dim"
+    """
+    This Enum contains the rich style descriptions used for evlauating guesses.
+    It uses the numerical values from the OutputColor Enum.
+    """
+    GREEN = f"bold rgb({','.join([str(n) for n in OutputColor.GREEN.value])})"
+    YELLOW = f"bold rgb({','.join([str(n) for n in OutputColor.YELLOW.value])})"
+    GRAY = f"bold rgb({','.join([str(n) for n in OutputColor.GRAY.value])})"
+    WHITE = f"bold rgb({','.join([str(n) for n in OutputColor.WHITE.value])})"
 
 class BadWordException(Exception):
     pass
@@ -33,6 +83,7 @@ class Wordle:
     def __init__(self, target_word: Optional[str] = None) -> None:
         self.target_word = target_word
         self.possible_letters = {x: set(string.ascii_uppercase) for x in range(5)}
+        self.known_alphabet = {c: OutputStyle.WHITE.value for c in string.ascii_uppercase}
         self.included: set = set()
         self.excluded: set = set()
         self.guessed_words: list = []
@@ -67,13 +118,20 @@ class Wordle:
             return False
         return True
     
-    def _evaluate_guess_char(self, index: int, guess: str) -> str:
-        """Returns a rich markup style to match the evaluation of a supplied character."""
-        if self.target_word[index] == guess:
+    def _evaluate_guess_char(self, index: int, guess_char: str) -> str:
+        """
+        Returns a rich markup style to match the evaluation of a supplied character,
+        and updates the known alphabet accordingly.
+        """
+        if self.target_word[index] == guess_char:
+            self.known_alphabet[guess_char] = OutputStyle.GREEN.value
             return OutputStyle.GREEN.value
-        elif guess in self.target_word:
+        elif guess_char in self.target_word:
+            if not self.known_alphabet[guess_char] == OutputStyle.GREEN.value:
+                self.known_alphabet[guess_char] = OutputStyle.YELLOW.value
             return OutputStyle.YELLOW.value
         else:
+            self.known_alphabet[guess_char] = OutputStyle.GRAY.value
             return OutputStyle.GRAY.value
 
     def _get_valid_turn(self) -> str:
@@ -96,18 +154,39 @@ class Wordle:
         print("Welcome to wordle!\n")
         while self.target_word not in self.guessed_words and len(self.guessed_words) < 6:
             self.guessed_words.append(self._get_valid_turn())
+            self.clear_console()
             for word in self.guessed_words:
                 self.rich_print_guess_response(word)
+            self.rich_print_alphabet()
         if self.target_word in self.guessed_words:
             print("Congratulations!")
         else:
-            rich.print(f"\nWe were looking for [green]{self.target_word}[/]")
+            rich.print(f"\nWe were looking for [{OutputStyle.GREEN.value}]{self.target_word}[/]")
             print("Better luck next time!")
 
+    def _build_alphabet_string(self) -> str:
+        styled_alpha = ["\n"]
+        for char, style in self.known_alphabet.items():
+            styled_alpha.extend([f"[{style}]", char, "[/] "])
+        return "".join(styled_alpha)
+
+    def _evaluate_alphabet_character(self, char: str) -> str:
+        pass
+
+    def rich_print_alphabet(self) -> None:
+        rich.print(self._build_alphabet_string())
+    
+    @staticmethod
+    def clear_console():
+        if os.name == "nt":
+            os.system('cls')
+        else:
+            os.system('clear')
 
     def conclude(self) -> None:
         pass
         
+    
 # PLAY LOOP
 # - Request Turn
 # - Validate Turn
@@ -209,6 +288,8 @@ def test():
     #w = Wordle.new_random_wordle()
     #w.rich_print_guess_response("SOARE")
     w = Wordle.new_random_wordle()
+    #w.exclude("ABCD")
+    #w.rich_print_alphabet()
     w.play()
     #w.assign_at_index(0, "A")
     #w.assign_at_index(1, "L")
