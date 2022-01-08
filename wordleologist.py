@@ -12,7 +12,6 @@ SCRABBLE_WORDS_PATH = Path(__file__).parent / "data" / "Collins Scrabble Words (
 
 with open(SCRABBLE_WORDS_PATH) as scrabble_words:
     SCRABBLE_WORDS = {word.strip() for word in scrabble_words.readlines()}
-    #five_letter_words = {word.strip() for word in scrabble_words.readlines() if len(word.strip()) == 5}
 
 class OutputStyle(Enum):
     GREEN = "green"
@@ -24,38 +23,52 @@ class BadWordException(Exception):
 
 class Wordle:
     FIVE_LETTER_WORDS = {word for word in SCRABBLE_WORDS if len(word) == 5}
+    STANDARD_MESSAGES = {
+        "turn": "\nPlease enter your guess: ",
+        "bad turn": "\nPlease enter a valid 5 letter word:",
+        "win": "\nCongratulations!",
+        "lose": "\nBetter luck next time!",
+    }
+
     def __init__(self, target_word: Optional[str] = None) -> None:
         self.target_word = target_word
         self.possible_letters = {x: set(string.ascii_uppercase) for x in range(5)}
         self.included: set = set()
         self.excluded: set = set()
+        self.guessed_words: list = []
 
     @classmethod
     def new_random_wordle(cls) -> "Wordle":
+        """Creates a new Wordle object with a randomly selected target word."""
         return Wordle(random.choice(tuple(cls.FIVE_LETTER_WORDS)))
     
     def _build_guess_evaluation(self, guess: str) -> tuple:
+        """Creates a tuple of rich styles to match the evaluation of each character in the supplied guess."""
         return tuple([self._evaluate_guess_char(i, c) for i, c in enumerate(guess)])
     
-    def print_guess_response(self, guess: str) -> None:
-        response = []
+    def _build_rich_response_string(self, guess: str) -> str:
+        """Creates a string with rich style markup tags for the supplied guess. """
+        response: list = []
         for style, char in zip(self._build_guess_evaluation(guess), guess):
-            response.append(f"[{style}]")
-            response.append(f"{char}")
-            response.append("[/]")
-        rich.print("".join(response))
-        
+            response = response + [f"[{style}]{char}[/]"]
+        return "".join(response)
+    
+    def rich_print_guess_response(self, guess: str) -> None:
+        """Uses rich to print a stylized guess string."""
+        rich.print(self._build_rich_response_string(guess))
 
-    def _validate_guess(self, guess: str) -> str:
+    def _validate_guess(self, guess: str) -> bool:
+        """Returns True if a supplied guess is valid."""
         if len(guess) != 5:
-            raise ValueError(f"Improper guess length {guess}")
+            return False
         if self.target_word is None:
             raise RuntimeError(f"Target word not set")
         if guess.upper() not in self.FIVE_LETTER_WORDS:
-            raise BadWordException(f"{guess} is not an accepted word.")
-        return guess.upper()
+            return False
+        return True
     
     def _evaluate_guess_char(self, index: int, guess: str) -> str:
+        """Returns a rich markup style to match the evaluation of a supplied character."""
         if self.target_word[index] == guess:
             return OutputStyle.GREEN.value
         elif guess in self.target_word:
@@ -63,9 +76,45 @@ class Wordle:
         else:
             return OutputStyle.GRAY.value
 
+    def _get_valid_turn(self) -> str:
+        """Prompts the user for turns until they provide a valid one."""
+        guess = self._request_turn()
+        while not self._validate_guess(guess):
+            guess = self._request_turn(self.STANDARD_MESSAGES["bad turn"])
+        return guess.upper()
 
+    @classmethod
+    def _request_turn(cls, message: Optional[str] = None) -> str:
+        """Prompts the user for a guess."""
+        if message is None:
+            message = cls.STANDARD_MESSAGES["turn"]
+        print(message)
+        guess = input()
+        return guess
+
+    def play(self) -> None:
+        print("Welcome to wordle!\n")
+        while self.target_word not in self.guessed_words and len(self.guessed_words) < 6:
+            self.guessed_words.append(self._get_valid_turn())
+            for word in self.guessed_words:
+                self.rich_print_guess_response(word)
+        if self.target_word in self.guessed_words:
+            print("Congratulations!")
+        else:
+            rich.print(f"\nWe were looking for [green]{self.target_word}[/]")
+            print("Better luck next time!")
+
+
+    def conclude(self) -> None:
+        pass
         
-
+# PLAY LOOP
+# - Request Turn
+# - Validate Turn
+# - evaluate turn
+# - Update internal state
+# - print response
+# - Repeat as needed
 
 
     @property
@@ -127,30 +176,25 @@ class Wordle:
             raise ValueError(f"Tried to assign a string with improper number of characters: {char}")
         self.possible_letters[index] = set(char)
         self.included.add(char)
-
-    def evaluate_guesses_by_frequency(self):
-        """Returns a list of possible words sorted by their frequency scores."""
-        return list(reversed(sorted([(self._get_frequency_score(word), word) for word in self.possible_words])))
-    
-    def find_best_sieve(self):
-        """Returns the word with the highest frequency score, whether or not it could be the target word."""
-        freq = self.frequencies
-        best_sieve = (0, "")
-        # TODO: break ties randomly.
-        for word in self.FIVE_LETTER_WORDS:
-            best_sieve = max(best_sieve, (self._get_frequency_score(word, freq=freq), word))
-        return best_sieve
-    
-    def find_best_guess(self):
+        
+    def find_best_guess(self, hardmode: bool = False):
         """Returns the word with the highest frequency score that could also be the target word."""
         freq = self.frequencies
-        best_guess = (0, "")
-        # TODO: break ties randomly.
-        for word in self.possible_words:
-            best_guess = max(best_guess, (self._get_frequency_score(word, freq), word))
-        return best_guess
+        best_score = 0
+        best_guesses = []
+        if hardmode:
+            word_set = self.possible_words
+        else:
+            word_set = self.FIVE_LETTER_WORDS
+        for word in word_set:
+            score = self._get_frequency_score(word, freq)
+            if score == best_score:
+                best_guesses.append(word)
+            elif score > best_score:
+                best_score = score
+                best_guesses = [word]
+        return random.choice(best_guesses)
             
-
     def _get_frequency_score(self, word: str, freq: Optional[Counter] = None) -> int:
         """
         Returns the sum of frequency scores by character in a supplied word, excluding characters that must be included in the target word.
@@ -162,20 +206,22 @@ class Wordle:
 
 
 def test():
+    #w = Wordle.new_random_wordle()
+    #w.rich_print_guess_response("SOARE")
     w = Wordle.new_random_wordle()
-    print(w.print_guess_response("SOARE"))
+    w.play()
     #w.assign_at_index(0, "A")
     #w.assign_at_index(1, "L")
     #w.assign_at_index(2, "N")
     #w.assign_at_index(3, "I")
     #w.assign_at_index(4, "Y")
-    #w.exclude("SOARINDU")
-    #w.include("ELYG")
-    #w.exclude_at_index(0, "LG")
+    #w.exclude("AROEINTY")
+    #w.include("LS")
+    #w.exclude_at_index(0, "L")
     #w.exclude_at_index(1, "")
     #w.exclude_at_index(2, "")
-    #w.exclude_at_index(3, "E")
-    #w.exclude_at_index(4, "E")
+    #w.exclude_at_index(3, "S")
+    #w.exclude_at_index(4, "")
     #print(w.included)
     #print(w.possible_words)
     #print(w.frequencies)
@@ -187,8 +233,10 @@ def test():
     #    print(w.find_best_guess())
     #else:
     #    print(w.possible_words)
-    #    print(w.find_best_guess())
+    #print(w.find_best_guess())
     
+def run_as_cli():
+    pass
 
 if __name__ == "__main__":
     test()
