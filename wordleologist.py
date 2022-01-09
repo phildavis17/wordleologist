@@ -30,17 +30,20 @@ class ColorRange:
     def color_from_number(self, n: int) -> tuple:
         if not self.min <= n <= self.max:
             raise ValueError(f"{n} exceeds range bounds ({self.min}, {self.max})")
+        span = self.max - self.min
+        pos = n / span
+        return self.color_at_position(pos)
         
-
     def color_at_position(self, pos: float) -> tuple:
-        min_r, min_g, min_b = self.min_color
-        max_r, max_b, max_b = self.max_color
+        return tuple([int((min_val + max_val) * pos) for min_val, max_val in zip(self.min_color, self.max_color)])
+    
+    @staticmethod
+    def rich_format_rgb(rgb: tuple) -> str:
+        r, g, b = rgb
+        return f"rgb({r},{g},{b})"
 
     def __repr__(self) -> str:
         return f"ColorRange({self.min}, {self.max})"
-
-    def __str__(self) -> str:
-        pass
 
 class ColorBox:
     def __init__(self) -> None:
@@ -50,7 +53,8 @@ class ColorBox:
 
 class OutputColor(Enum):
     """
-    This Enum describes the colors used to display guesses.
+    This Enum describes the colors used in the OutputStyle Enum.
+    These are stored apart from the style as a whole to allow for simpler numerical operations on color.
     """
     GREEN = (0, 208, 0)
     YELLOW = (208, 208, 0)
@@ -287,10 +291,10 @@ class Wordle:
 def test():
     #w = Wordle.new_random_wordle()
     #w.rich_print_guess_response("SOARE")
-    w = Wordle.new_random_wordle()
+    #w = Wordle.new_random_wordle()
     #w.exclude("ABCD")
     #w.rich_print_alphabet()
-    w.play()
+    #w.play()
     #w.assign_at_index(0, "A")
     #w.assign_at_index(1, "L")
     #w.assign_at_index(2, "N")
@@ -315,7 +319,11 @@ def test():
     #else:
     #    print(w.possible_words)
     #print(w.find_best_guess())
+
+    cr = ColorRange(min = 0, max = 10, min_color=(255,0,0), max_color=(0,255,0))
     
+    for n in range(11):
+        rich.print(f"[{cr.rich_format_rgb(cr.color_from_number(n))}] TESTING [/]")
 def run_as_cli():
     pass
 
