@@ -1,13 +1,13 @@
+import argparse
 import os
-import string
 import random
-import rich
+import string
 from collections import Counter
 from enum import Enum
 from pathlib import Path
-from typing import Iterable, Optional, Tuple
-#from rich.console import Console
-#from rich.theme import Theme
+from typing import Optional, Tuple
+
+import rich
 
 SCRABBLE_WORDS_PATH = Path(__file__).parent / "data" / "Collins Scrabble Words (2019).txt"
 
@@ -16,8 +16,9 @@ with open(SCRABBLE_WORDS_PATH) as scrabble_words:
 
 
 class ColorRange:
-    """A one dimensional """
-    def __init__(self, min: int = 0, max: int = 100, min_color: Tuple[int] = None, max_color: Tuple[int] = None) -> None:
+    """Maps a range of colors to a color gradient."""
+
+    def __init__(self, min: int = 0, max: int = 100, min_color: Tuple[int, int, int] = None, max_color: Tuple[int, int, int] = None) -> None:
         self.min: int = min
         self.max: int = max
         self.min_color: tuple = min_color
@@ -27,28 +28,88 @@ class ColorRange:
         if self.max_color is None:
             self.max_color = (255, 255, 255)
     
-    def color_from_number(self, n: int) -> tuple:
+    def color_from_number(self, n: int) -> Tuple[int, int, int]:
+        """Returns an interpolated rgb tuple based on a number within the established range."""
         if not self.min <= n <= self.max:
             raise ValueError(f"{n} exceeds range bounds ({self.min}, {self.max})")
-        span = self.max - self.min
-        pos = n / span
-        return self.color_at_position(pos)
+        pos = (n - self.min) / (self.max - self.min)
+        return self.color_from_position(pos)
         
-    def color_at_position(self, pos: float) -> tuple:
-        return tuple([int((min_val + max_val) * pos) for min_val, max_val in zip(self.min_color, self.max_color)])
+    def color_from_position(self, pos: float) -> Tuple[int, int, int]:
+        """Returns an interpolated rgb tuple based on a decimal number between 0 and 1."""
+        if not 0.0 <= pos <= 1.0:
+            raise ValueError(f"pos must be between 0 and 1, not {pos}")
+        return tuple([int(min_val + (max_val - min_val) * pos) for min_val, max_val in zip(self.min_color, self.max_color)])
     
     @staticmethod
     def rich_format_rgb(rgb: tuple) -> str:
+        """Returns a string that describes the supplied rgb tuple in a way rich can understand."""
         r, g, b = rgb
         return f"rgb({r},{g},{b})"
+    
+    def demo(self, count: int = 10) -> None:
+        """Prints a """
+        start = self.min
+        stop = self.max
+        print(repr(self))
+        for n in range(count):
+            pos = n / (count - 1)
+            num = int(start + (stop - start) * (n / (count - 1)))
+            rich.print(f"{'{:.2f}'.format(pos)} [{self.rich_format_rgb(self.color_from_number(num))}]████ Demo ████[/] {num}")
 
     def __repr__(self) -> str:
         return f"ColorRange({self.min}, {self.max})"
 
-class ColorBox:
-    def __init__(self) -> None:
-        self
 
+class ColorBox:
+    def __init__(
+        self, 
+        x_bounds: Tuple[int, int] = (0, 100),
+        y_bounds: Tuple[int, int] = (0, 100), 
+        upper_colors: Tuple[Tuple[int, int, int], Tuple[int, int, int]] = None,
+        lower_colors: Tuple[Tuple[int, int, int], Tuple[int, int, int]] = None,
+        ) -> None:
+        self.x_min, self.x_max = x_bounds
+        self.y_min, self.y_max = y_bounds
+        if upper_colors is None:
+            upper_colors = ((255, 255, 0), (0, 0, 255))
+        if lower_colors is None:
+            lower_colors = ((0, 0, 0), (255, 255, 255))
+        upper_start, upper_stop = upper_colors
+        lower_start, lower_stop = lower_colors
+        self.upper_range = ColorRange(self.x_min, self.x_max, upper_start, upper_stop)
+        self.lower_range = ColorRange(self.x_min, self.x_max, lower_start, lower_stop)
+    
+    def color_from_numbers(self, x: int, y: int) -> Tuple[int, int, int]:
+        upper = self.upper_range.color_from_number(x)
+        lower = self.lower_range.color_from_number(x)
+        vertical = ColorRange(self.y_min, self.y_max, lower, upper)
+        return vertical.color_from_number(y)
+
+    def color_from_positions(self, x: float, y: float) -> Tuple[int, int, int]:
+        upper = self.upper_range.color_from_position(x)
+        lower = self.lower_range.color_from_position(x)
+        vertical = ColorRange(self.y_min, self.y_max, lower, upper)
+        return vertical.color_from_position(y)
+
+    @staticmethod
+    def rich_format_rgb(rgb: Tuple[int, int, int]):
+        """Returns a string that describes the supplied rgb tuple in a way rich can understand."""
+        r, g, b = rgb
+        return f"rgb({r},{g},{b})"
+
+    def demo(self, count: int = 10) -> None:
+        for y in range(count):
+            y_pos = y / (count - 1)
+            row = []
+            for x in range(count):
+                x_pos = x / (count - 1)
+                row.extend([f"[{self.rich_format_rgb(self.color_from_positions(x_pos, y_pos))}]", "█", "[/]"])
+            rich.print("".join(row))
+
+                
+    def __repr__(self) -> str:
+        pass
 
 
 class OutputColor(Enum):
@@ -56,8 +117,8 @@ class OutputColor(Enum):
     This Enum describes the colors used in the OutputStyle Enum.
     These are stored apart from the style as a whole to allow for simpler numerical operations on color.
     """
-    GREEN = (0, 208, 0)
-    YELLOW = (208, 208, 0)
+    GREEN = (0, 192, 50)
+    YELLOW = (228, 208, 0)
     GRAY = (98, 98, 98)
     WHITE = (208, 208, 208)
 
@@ -75,11 +136,11 @@ class OutputStyle(Enum):
 class BadWordException(Exception):
     pass
 
-class Wordle:
+class WordleTrainer:
     FIVE_LETTER_WORDS = {word for word in SCRABBLE_WORDS if len(word) == 5}
     STANDARD_MESSAGES = {
         "turn": "\nPlease enter your guess: ",
-        "bad turn": "\nPlease enter a valid 5 letter word:",
+        "bad turn": "\nPlease enter a valid 5 letter word: ",
         "win": "\nCongratulations!",
         "lose": "\nBetter luck next time!",
     }
@@ -93,9 +154,9 @@ class Wordle:
         self.guessed_words: list = []
 
     @classmethod
-    def new_random_wordle(cls) -> "Wordle":
+    def new_random_wordle(cls) -> "WordleTrainer":
         """Creates a new Wordle object with a randomly selected target word."""
-        return Wordle(random.choice(tuple(cls.FIVE_LETTER_WORDS)))
+        return WordleTrainer(random.choice(tuple(cls.FIVE_LETTER_WORDS)))
     
     def _build_guess_evaluation(self, guess: str) -> tuple:
         """Creates a tuple of rich styles to match the evaluation of each character in the supplied guess."""
@@ -150,12 +211,12 @@ class Wordle:
         """Prompts the user for a guess."""
         if message is None:
             message = cls.STANDARD_MESSAGES["turn"]
-        print(message)
+        print(message, end="")
         guess = input()
         return guess
 
     def play(self) -> None:
-        print("Welcome to wordle!\n")
+        print("Welcome to wordleologist!\n")
         while self.target_word not in self.guessed_words and len(self.guessed_words) < 6:
             self.guessed_words.append(self._get_valid_turn())
             self.clear_console()
@@ -174,9 +235,6 @@ class Wordle:
             styled_alpha.extend([f"[{style}]", char, "[/] "])
         return "".join(styled_alpha)
 
-    def _evaluate_alphabet_character(self, char: str) -> str:
-        pass
-
     def rich_print_alphabet(self) -> None:
         rich.print(self._build_alphabet_string())
     
@@ -189,16 +247,6 @@ class Wordle:
 
     def conclude(self) -> None:
         pass
-        
-    
-# PLAY LOOP
-# - Request Turn
-# - Validate Turn
-# - evaluate turn
-# - Update internal state
-# - print response
-# - Repeat as needed
-
 
     @property
     def frequencies(self) -> Counter:
@@ -211,10 +259,14 @@ class Wordle:
     @property
     def possible_words(self) -> set:
         """The set of words that can possibly be the target word, based on current information."""
-        remaining_words = Wordle._filter_by_inlcuded(self.included, self.FIVE_LETTER_WORDS)
+        remaining_words = WordleTrainer._filter_by_inlcuded(self.included, self.FIVE_LETTER_WORDS)
         for index, letters in self.possible_letters.items():
-            remaining_words = Wordle._filter_by_letter(index, letters, remaining_words)
+            remaining_words = WordleTrainer._filter_by_letter(index, letters, remaining_words)
         return remaining_words
+    
+    @property
+    def index_frequencies(self) -> dict:
+        return {i: Counter(chars) for i, chars in enumerate(zip(*self.possible_words))}
 
     @staticmethod
     def _filter_by_inlcuded(included: set, words: set) -> set:
@@ -259,6 +311,24 @@ class Wordle:
             raise ValueError(f"Tried to assign a string with improper number of characters: {char}")
         self.possible_letters[index] = set(char)
         self.included.add(char)
+
+    def _build_prediction_str(self, guess: str) -> str:
+        cb = ColorBox(upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value), lower_colors=(OutputColor.GRAY.value,OutputColor.GRAY.value))
+        num_words = len(self.possible_words)
+        total_freq = self.frequencies
+        index_freq = self.index_frequencies
+        prediction = []
+        for i, c in enumerate(guess):
+            presence_freq = total_freq[c] / num_words
+            if total_freq[c] == 0:
+                idx_freq = 0.0
+            else:
+                idx_freq = index_freq[i][c] / total_freq[c]
+            prediction.extend([f"[{cb.rich_format_rgb(cb.color_from_positions(idx_freq, presence_freq))}]", c, "[/]"])
+        return "".join(prediction)
+        
+    def rich_print_prediction_str(self, guess: str) -> None:
+        rich.print(self._build_prediction_str(guess))
         
     def find_best_guess(self, hardmode: bool = False):
         """Returns the word with the highest frequency score that could also be the target word."""
@@ -289,24 +359,26 @@ class Wordle:
 
 
 def test():
-    #w = Wordle.new_random_wordle()
+    w = WordleTrainer.new_random_wordle()
+    #for k, v in w.index_frequencies.items():
+    #    print(v)
+    w.rich_print_prediction_str("CORES")
     #w.rich_print_guess_response("SOARE")
-    #w = Wordle.new_random_wordle()
-    #w.exclude("ABCD")
-    #w.rich_print_alphabet()
     #w.play()
-    #w.assign_at_index(0, "A")
-    #w.assign_at_index(1, "L")
+    #w.assign_at_index(0, "G")
+    #w.assign_at_index(1, "O")
     #w.assign_at_index(2, "N")
     #w.assign_at_index(3, "I")
-    #w.assign_at_index(4, "Y")
-    #w.exclude("AROEINTY")
-    #w.include("LS")
-    #w.exclude_at_index(0, "L")
-    #w.exclude_at_index(1, "")
-    #w.exclude_at_index(2, "")
-    #w.exclude_at_index(3, "S")
+    #w.assign_at_index(4, "E")
+    #w.exclude("AS")
+    #w.include("RO")
+    #w.exclude_at_index(0, "")
+    #w.exclude_at_index(1, "R")
+    #w.exclude_at_index(2, "O")
+    #w.exclude_at_index(3, "")
     #w.exclude_at_index(4, "")
+    #w.rich_print_prediction_str("GOURD")
+    #print(w.possible_words)
     #print(w.included)
     #print(w.possible_words)
     #print(w.frequencies)
@@ -317,13 +389,16 @@ def test():
     #elif len(w.possible_words) >10:
     #    print(w.find_best_guess())
     #else:
-    #    print(w.possible_words)
+    #print(w.possible_words)
     #print(w.find_best_guess())
 
-    cr = ColorRange(min = 0, max = 10, min_color=(255,0,0), max_color=(0,255,0))
-    
-    for n in range(11):
-        rich.print(f"[{cr.rich_format_rgb(cr.color_from_number(n))}] TESTING [/]")
+    #cr = ColorRange(min = 7, max = 23, min_color=OutputColor.YELLOW.value, max_color=OutputColor.GREEN.value)
+    #cr.demo()
+
+    #cb = ColorBox(upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value), lower_colors=(OutputColor.GRAY.value, OutputColor.GRAY.value))
+    #cb.demo(8)
+
+
 def run_as_cli():
     pass
 
