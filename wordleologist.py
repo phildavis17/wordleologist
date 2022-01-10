@@ -1,4 +1,5 @@
 import argparse
+import enum
 import os
 import random
 import string
@@ -355,7 +356,16 @@ class WordleTrainer:
         """
         if freq is None:
             freq = self.frequencies
-        return sum([freq[c] for c in set(word) if c not in self.included])
+        return sum([freq[c] for c in set(word) if c not in self.included and c not in self.excluded])
+
+    def find_best_guess_by_frequency(self, hardmode: bool = False) -> str:
+        pass
+
+    def _get_index_frequency_score(self, word: str, freq: Optional[dict] = None) -> int:
+        if freq is None:
+            freq = self.index_frequencies
+        return sum([freq[i][c] for i, c in enumerate(word)])
+        
 
 
 def test():
