@@ -134,8 +134,6 @@ class OutputStyle(Enum):
     GRAY = f"bold rgb({','.join([str(n) for n in OutputColor.GRAY.value])})"
     WHITE = f"bold rgb({','.join([str(n) for n in OutputColor.WHITE.value])})"
 
-class BadWordException(Exception):
-    pass
 
 class WordleTrainer:
     FIVE_LETTER_WORDS = {word for word in SCRABBLE_WORDS if len(word) == 5}
@@ -331,7 +329,7 @@ class WordleTrainer:
     def rich_print_prediction_str(self, guess: str) -> None:
         rich.print(self._build_prediction_str(guess))
         
-    def find_best_guess(self, hardmode: bool = False):
+    def find_best_guess_by_frequency(self, hardmode: bool = False):
         """Returns the word with the highest frequency score that could also be the target word."""
         freq = self.frequencies
         best_score = 0
@@ -358,35 +356,72 @@ class WordleTrainer:
             freq = self.frequencies
         return sum([freq[c] for c in set(word) if c not in self.included and c not in self.excluded])
 
-    def find_best_guess_by_frequency(self, hardmode: bool = False) -> str:
-        pass
+    def find_best_guess_by_index(self, hardmode: bool = False) -> str:
+        freq = self.index_frequencies
+        best_score = 0
+        best_guess = []
+        if hardmode:
+            words = self.possible_words
+        else:
+            words = self.FIVE_LETTER_WORDS
+        #words = [word for word in words if len(word) == len(set(word))]
+        for word in words:
+            score = self._get_index_frequency_score(word, freq)
+            if score > best_score:
+                best_score = score
+                best_guess = [word]
+            elif score == best_score:
+                best_guess.append(word)
+        return random.choice(best_guess)
 
     def _get_index_frequency_score(self, word: str, freq: Optional[dict] = None) -> int:
         if freq is None:
             freq = self.index_frequencies
         return sum([freq[i][c] for i, c in enumerate(word)])
         
+    def find_best_guess_combined(self, hardmode: bool = False) -> str:
+        freq = self.frequencies
+        i_freq = self.index_frequencies
+        best_score = 0
+        best_guess = []
+        if hardmode:
+            words = self.possible_words
+        else:
+            words = self.FIVE_LETTER_WORDS
+        for word in words:
+            score = self._get_frequency_score(word, freq) + self._get_index_frequency_score(word, i_freq)
+            if score > best_score:
+                best_score = score
+                best_guess = [word]
+            elif score == best_score:
+                best_guess.append(word)
+        return random.choice(best_guess)
 
 
 def test():
     w = WordleTrainer.new_random_wordle()
     #for k, v in w.index_frequencies.items():
     #    print(v)
-    w.rich_print_prediction_str("CORES")
+    
+    #w.rich_print_prediction_str("CORES")
     #w.rich_print_guess_response("SOARE")
     #w.play()
-    #w.assign_at_index(0, "G")
-    #w.assign_at_index(1, "O")
-    #w.assign_at_index(2, "N")
-    #w.assign_at_index(3, "I")
-    #w.assign_at_index(4, "E")
-    #w.exclude("AS")
-    #w.include("RO")
-    #w.exclude_at_index(0, "")
-    #w.exclude_at_index(1, "R")
-    #w.exclude_at_index(2, "O")
-    #w.exclude_at_index(3, "")
-    #w.exclude_at_index(4, "")
+    #w.assign_at_index(0, "P")
+    w.assign_at_index(1, "R")
+    #w.assign_at_index(2, "A")
+    w.assign_at_index(3, "N")
+    w.assign_at_index(4, "Y")
+    w.exclude("TAESO")
+    w.include("RI")
+    w.exclude_at_index(0, "I")
+    w.exclude_at_index(1, "")
+    w.exclude_at_index(2, "R")
+    w.exclude_at_index(3, "")
+    w.exclude_at_index(4, "")
+    w.rich_print_prediction_str(w.find_best_guess_combined())
+    print(f"{len(w.possible_words)} possible words")
+    if len(w.possible_words) <= 20:
+        print(w.possible_words)
     #w.rich_print_prediction_str("GOURD")
     #print(w.possible_words)
     #print(w.included)
