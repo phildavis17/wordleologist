@@ -469,9 +469,9 @@ def test():
     w.exclude_at_index(2, "R")
     w.exclude_at_index(3, "R")
     w.exclude_at_index(4, "D")
-    w.rich_print_prediction_str("DRINK")
+    #w.rich_print_prediction_str("DRINK")
     #w.rich_print_prediction_str(w.find_best_guess_combined())
-    print(f"{len(w.possible_words)} possible words")
+    #print(f"{len(w.possible_words)} possible words")
     #if len(w.possible_words) <= 20:
     #    print(w.possible_words)
     # w.rich_print_prediction_str("GOURD")
@@ -492,8 +492,9 @@ def test():
     # cr = ColorRange(min = 7, max = 23, min_color=OutputColor.YELLOW.value, max_color=OutputColor.GREEN.value)
     # cr.demo()
 
-    # cb = ColorBox(upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value), lower_colors=(OutputColor.GRAY.value, OutputColor.GRAY.value))
-    # cb.demo(8)
+    #cb = ColorBox(upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value), lower_colors=(OutputColor.GRAY.value, OutputColor.GRAY.value))
+    cb = ColorBox(upper_colors=((201, 180, 89), (106, 170, 101)), lower_colors=((120, 124, 126), (120, 124, 126)))
+    cb.demo(30)
 
 
 def run_as_cli():
