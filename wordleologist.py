@@ -342,7 +342,7 @@ class WordleTrainer:
         """
         if len(char) != 1:
             raise ValueError(
-                f"Tried to assign a string with improper number of characters: {char}"
+                f"Tried to assign a string with improper number of characters: '{char}'"
             )
         self.possible_letters[index] = set(char)
         self.included.add(char)
@@ -463,7 +463,15 @@ class WordleTrainer:
         pass
 
     def get_clues(self) -> tuple:
-        pass
+        info = self.find_best_guess_by_frequency()
+        green = self.find_best_guess_by_index()
+        balance = self.find_best_guess_combined()
+        print("Info: ", end="")
+        self.rich_print_prediction_str(info)
+        print("Green: ", end="")
+        self.rich_print_prediction_str(green)
+        print("Balance: ", end="")
+        self.rich_print_prediction_str(balance)
 
     def get_words(self) -> list:
         """Returns a sorted list of words that are currently possible."""
@@ -513,23 +521,24 @@ def test():
     # w.rich_print_prediction_str("CORES")
     # w.rich_print_guess_response("SOARE")
     # w.play()
-    #w.assign_at_index(0, "")
-    w.assign_at_index(1, "A")
-    w.assign_at_index(2, "N")
+    w.assign_at_index(0, "D")
+    #w.assign_at_index(1, "R")
+    #w.assign_at_index(2, "")
     #w.assign_at_index(3, "S")
-    #w.assign_at_index(4, "E")
-    w.exclude("TRESLDY")
-    w.include("AIN")
-    w.exclude_at_index(0, "")
-    w.exclude_at_index(1, "I")
+    w.assign_at_index(4, "Y")
+    w.exclude("ROSEINTUMBO")
+    w.include("ALYD")
+    w.exclude_at_index(0, "AL")
+    w.exclude_at_index(1, "")
     w.exclude_at_index(2, "")
     w.exclude_at_index(3, "")
     w.exclude_at_index(4, "")
-    w.rich_print_prediction_str("PANIC")
+    w.get_clues()
+    #w.rich_print_prediction_str("PANIC")
     #w.rich_print_prediction_str(w.find_best_guess_combined())
     print(f"{len(w.possible_words)} possible words")
-    if len(w.possible_words) <= 20:
-        print(w.possible_words)
+    #if len(w.possible_words) <= 20:
+    #    print(w.possible_words)
     # w.rich_print_prediction_str("GOURD")
     # print(w.possible_words)
     # print(w.included)
