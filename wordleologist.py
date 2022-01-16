@@ -2,6 +2,7 @@ import argparse
 import os
 import random
 import string
+import sys
 from collections import Counter
 from enum import Enum
 from pathlib import Path
@@ -407,6 +408,10 @@ class WordleTrainer:
         )
 
     def find_best_guess_by_index(self, hardmode: bool = False) -> str:
+        """
+        Returns a word that is expected to produce the most green letters.
+        In the event of a tie, a word is chosen at random.
+        """
         freq = self.index_frequencies
         best_score = 0
         best_guess = []
@@ -448,6 +453,57 @@ class WordleTrainer:
                 best_guess.append(word)
         return random.choice(best_guess)
 
+    def green(self, characters: str) -> None:
+        pass
+
+    def yellow(self, characters: str) -> None:
+        pass
+
+    def gray(self, characters: str) -> None:
+        pass
+
+    def get_clues(self) -> tuple:
+        pass
+
+    def get_words(self) -> list:
+        """Returns a sorted list of words that are currently possible."""
+        return sorted(list(self.possible_words))
+    
+    def test(self, guess: str) -> None:
+        # How and where do I validate this?
+        self.rich_print_prediction_str(guess)
+    
+    def play(self) -> None:
+        pass
+
+    def help(self, cmd: Optional[str] = None) -> None:
+        pass
+    
+    def exit(self) -> None:
+        sys.exit()
+    
+    def _handle_command(self, cmd: str) -> None:
+        command_dict = {
+            "play": self.play,
+            "help": self.help,
+            "exit": self.exit,
+            "test": self.test,
+            "green": self.green,
+            "yellow": self.yellow,
+            "gray": self.gray,
+            "clues": self.get_clues,
+            "words": self.get_words,
+        }
+
+
+
+
+
+
+
+
+
+
 
 def test():
     w = WordleTrainer.new_random_wordle()
@@ -457,19 +513,19 @@ def test():
     # w.rich_print_prediction_str("CORES")
     # w.rich_print_guess_response("SOARE")
     # w.play()
-    w.assign_at_index(0, "T")
+    #w.assign_at_index(0, "")
     w.assign_at_index(1, "A")
     w.assign_at_index(2, "N")
-    #w.assign_at_index(3, "E")
-    w.assign_at_index(4, "Y")
-    w.exclude("RESMOK")
-    w.include("TANY")
+    #w.assign_at_index(3, "S")
+    #w.assign_at_index(4, "E")
+    w.exclude("TRESLDY")
+    w.include("AIN")
     w.exclude_at_index(0, "")
-    w.exclude_at_index(1, "")
+    w.exclude_at_index(1, "I")
     w.exclude_at_index(2, "")
     w.exclude_at_index(3, "")
     w.exclude_at_index(4, "")
-    w.rich_print_prediction_str("TANKY")
+    w.rich_print_prediction_str("PANIC")
     #w.rich_print_prediction_str(w.find_best_guess_combined())
     print(f"{len(w.possible_words)} possible words")
     if len(w.possible_words) <= 20:
@@ -499,6 +555,16 @@ def test():
 
 def run_as_cli():
     pass
+    # play - 
+    # yellow -
+    # gray - 
+    # green -
+    # clue - shows three suggested guesses.
+    # test - 
+    # words - 
+    # clear - 
+    # exit - 
+
 
 
 if __name__ == "__main__":
