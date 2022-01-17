@@ -1,4 +1,5 @@
 import argparse
+import enum
 import os
 import random
 import string
@@ -6,7 +7,7 @@ import sys
 from collections import Counter
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 import rich
 
@@ -165,8 +166,24 @@ class WordleTrainer:
         "win": "\nCongratulations!",
         "lose": "\nBetter luck next time!",
     }
+    UI_COMMANDS = {
+        "play",
+        "help",
+        "exit",
+        "test",
+        "green",
+        "yellow",
+        "gray",
+        "clues",
+        "words",
+        "reset",
+    }
 
     def __init__(self, target_word: Optional[str] = None) -> None:
+        # The actual setup stuff has been moved to sel.reset to reduce code duplication.
+        self.reset()
+
+    def reset(self, target_word: Optional[str] = None) -> None:
         self.target_word = target_word
         self.possible_letters = {x: set(string.ascii_uppercase) for x in range(5)}
         self.known_alphabet = {
@@ -275,6 +292,9 @@ class WordleTrainer:
     def conclude(self) -> None:
         pass
 
+
+
+
     @property
     def frequencies(self) -> Counter:
         """The character frequency counts for characters in remaining possible words."""
@@ -293,6 +313,8 @@ class WordleTrainer:
             remaining_words = WordleTrainer._filter_by_letter(
                 index, letters, remaining_words
             )
+        if not remaining_words:
+            raise ValueError("No words are possible. Something went wrong!")
         return remaining_words
 
     @property
@@ -454,15 +476,25 @@ class WordleTrainer:
         return random.choice(best_guess)
 
     def green(self, characters: str) -> None:
-        pass
+        char_dict = self._process_char_assignment_str(characters)
+        for i, c in char_dict.items():
+            self.assign_at_index(i, c)
 
     def yellow(self, characters: str) -> None:
-        pass
+        char_dict = self._process_char_assignment_str(characters)
+        for i, c in char_dict.items():
+            self.include(c)
+            self.exclude_at_index(i, c)
 
     def gray(self, characters: str) -> None:
+        self.exclude(characters.upper())
         pass
 
-    def get_clues(self) -> tuple:
+    def _process_char_assignment_str(self, input_str: str) -> dict:
+        return {i: c.upper() for i, c in enumerate(input_str) if c in string.ascii_letters}
+
+    def get_clues(self) -> None:
+        """Prints the three different types of clue."""
         info = self.find_best_guess_by_frequency()
         green = self.find_best_guess_by_index()
         balance = self.find_best_guess_combined()
@@ -485,74 +517,124 @@ class WordleTrainer:
         pass
 
     def help(self, cmd: Optional[str] = None) -> None:
-        pass
+        print("Look, I'm working on it, OK?")
     
     def exit(self) -> None:
         sys.exit()
     
-    def _handle_command(self, cmd: str) -> None:
-        command_dict = {
+    def _handle_command(self, cmd: tuple) -> None:
+        no_arg = {
             "play": self.play,
-            "help": self.help,
             "exit": self.exit,
+            "clues": self.get_clues,
+            "words": self.get_words,
+            "reset": self.reset,
+        }
+
+        with_arg = {
+            "help": self.help,
             "test": self.test,
             "green": self.green,
             "yellow": self.yellow,
             "gray": self.gray,
-            "clues": self.get_clues,
-            "words": self.get_words,
         }
 
+        command, argument = cmd
+        if command in no_arg:
+            no_arg[command]()
+        elif command in with_arg:
+            with_arg[command](argument)
+        else:
+            raise RuntimeError(f"A strange command has made it past the gates: {command}??????")
 
+    @staticmethod
+    def _tokenize_input(input_str: str) -> tuple:
+        parts = input_str.partition(" ")
+        return (parts[0].lower(), parts[-1].upper())
+    
+    @staticmethod
+    def _validate_index_token(tokens: tuple) -> bool:
+        """
+        Returns true if the token sent along with a command is a well formed token for an index sensitive command.
+        Does nothing to validate the command itself, assuming that such a check happens before this is invoked.
+        """
+        _, token = tokens
+        return len(token) == 5
 
+    @staticmethod
+    def _validate_any_token(tokens: tuple) -> bool:
+        """
+        Returns true if the token sent along with a command is a well formed token for a non-index-sensitive command.
+        Does nothing to validate the command itself, assuming that such a check happens before this is invoked.
+        """
+        _, token = tokens
+        return bool(token)
+    
+    @staticmethod
+    def _validate_no_token(tokens: tuple) -> bool:
+        # I don't think this actually needs to do anything?
+        return True
 
+    @classmethod
+    def _validate_help(cls, tokens: tuple) -> bool:
+        pass
 
+    @classmethod
+    def _validate_command_input(cls, input_tuple: tuple) -> bool:
+        validators = {
+            "play": cls._validate_no_token,
+            "help": cls._validate_help,
+            "exit": cls._validate_no_token,
+            "test": cls._validate_index_token,
+            "green": cls._validate_index_token,
+            "yellow": cls._validate_index_token,
+            "gray": cls._validate_any_token,
+            "clues": cls._validate_no_token,
+            "words": cls._validate_no_token,
+            "reset": cls._validate_no_token,
+        }
 
+        command, token = input_tuple
+        if command not in validators:
+            print("Sorry, I didn't understand that.")
+            return False
+        elif not validators[command]((command, token)):
+            return False
+        return True
 
+    @classmethod
+    def _get_valid_command_input(cls) -> tuple:
+        valid = False
+        while not valid:
+            usr_input = cls._tokenize_input(input(" > "))
+            valid = cls._validate_command_input(usr_input)
+        return usr_input
 
+    def input_loop(self) -> None:
+        usr_input = self._get_valid_command_input()
+        self._handle_command(usr_input)
 
 
 
 def test():
     w = WordleTrainer.new_random_wordle()
-    # for k, v in w.index_frequencies.items():
-    #    print(v)
-
-    # w.rich_print_prediction_str("CORES")
-    # w.rich_print_guess_response("SOARE")
+    #print(w._validate_command_input("exit a--s-"))
+    print(w._get_valid_command_input())
+    
+    
     # w.play()
-    w.assign_at_index(0, "D")
-    #w.assign_at_index(1, "R")
-    #w.assign_at_index(2, "")
-    #w.assign_at_index(3, "S")
-    w.assign_at_index(4, "Y")
-    w.exclude("ROSEINTUMBO")
-    w.include("ALYD")
-    w.exclude_at_index(0, "AL")
-    w.exclude_at_index(1, "")
-    w.exclude_at_index(2, "")
-    w.exclude_at_index(3, "")
-    w.exclude_at_index(4, "")
-    w.get_clues()
-    #w.rich_print_prediction_str("PANIC")
+    #w.green("--o-e")
+    #w.gray("ars")
+    #w.yellow("---l-")
+    #w.gray("chid")
+    #w.get_clues()
+    #w.rich_print_prediction_str("LINTY")
     #w.rich_print_prediction_str(w.find_best_guess_combined())
-    print(f"{len(w.possible_words)} possible words")
+    #print(f"{len(w.possible_words)} possible words")
     #if len(w.possible_words) <= 20:
     #    print(w.possible_words)
     # w.rich_print_prediction_str("GOURD")
     # print(w.possible_words)
-    # print(w.included)
-    # print(w.possible_words)
-    # print(w.frequencies)
-    # for t in w.evaluate_guesses_by_frequency():
-    #    print(t)
-    # if len(w.possible_words) > 100:
-    #    print(w.find_best_sieve())
-    # elif len(w.possible_words) >10:
-    #    print(w.find_best_guess())
-    # else:
-    # print(w.possible_words)
-    # print(w.find_best_guess())
 
     # cr = ColorRange(min = 7, max = 23, min_color=OutputColor.YELLOW.value, max_color=OutputColor.GREEN.value)
     # cr.demo()
@@ -562,18 +644,8 @@ def test():
     #cb.demo(30)
 
 
-def run_as_cli():
+def run_text_interface():
     pass
-    # play - 
-    # yellow -
-    # gray - 
-    # green -
-    # clue - shows three suggested guesses.
-    # test - 
-    # words - 
-    # clear - 
-    # exit - 
-
 
 
 if __name__ == "__main__":
