@@ -1,13 +1,16 @@
-import argparse
-import enum
+# Wordleologist, Wordle hints as gentle as you want them.
+# Philip Davis
+# 2022
+
 import os
 import random
 import string
 import sys
 from collections import Counter
 from enum import Enum
+from hashlib import new
 from pathlib import Path
-from typing import Callable, Optional, Tuple
+from typing import Optional, Tuple
 
 import rich
 
@@ -20,7 +23,7 @@ with open(SCRABBLE_WORDS_PATH) as scrabble_words:
 
 
 class ColorRange:
-    """Maps a range of colors to a color gradient."""
+    """Maps a range of colors to a color gradient. Intended to work with rich."""
 
     def __init__(
         self,
@@ -79,6 +82,11 @@ class ColorRange:
 
 
 class ColorBox:
+    """
+    A 2 dimensional color gradient controlled by the color at each of the 4 corners.
+    Relies on ColorRange class, and is also intended to work with rich.
+    """
+
     def __init__(
         self,
         x_bounds: Tuple[int, int] = (0, 100),
@@ -131,6 +139,7 @@ class ColorBox:
             rich.print("".join(row))
 
     def __repr__(self) -> str:
+        # Not sure how to represent these in text form.
         pass
 
 
@@ -291,9 +300,6 @@ class WordleTrainer:
 
     def conclude(self) -> None:
         pass
-
-
-
 
     @property
     def frequencies(self) -> Counter:
@@ -476,22 +482,27 @@ class WordleTrainer:
         return random.choice(best_guess)
 
     def green(self, characters: str) -> None:
+        """Handles green letters."""
         char_dict = self._process_char_assignment_str(characters)
         for i, c in char_dict.items():
             self.assign_at_index(i, c)
 
     def yellow(self, characters: str) -> None:
+        """Handles yellow letters."""
         char_dict = self._process_char_assignment_str(characters)
         for i, c in char_dict.items():
             self.include(c)
             self.exclude_at_index(i, c)
 
     def gray(self, characters: str) -> None:
+        """Handles gray letters."""
         self.exclude(characters.upper())
         pass
 
     def _process_char_assignment_str(self, input_str: str) -> dict:
-        return {i: c.upper() for i, c in enumerate(input_str) if c in string.ascii_letters}
+        return {
+            i: c.upper() for i, c in enumerate(input_str) if c in string.ascii_letters
+        }
 
     def get_clues(self) -> None:
         """Prints the three different types of clue."""
@@ -505,23 +516,20 @@ class WordleTrainer:
         print("Balance: ", end="")
         self.rich_print_prediction_str(balance)
 
-    def get_words(self) -> list:
+    def get_words(self) -> None:
         """Returns a sorted list of words that are currently possible."""
-        return sorted(list(self.possible_words))
-    
+        print(sorted(list(self.possible_words)))
+
     def test(self, guess: str) -> None:
         # How and where do I validate this?
         self.rich_print_prediction_str(guess)
-    
-    def play(self) -> None:
-        pass
 
     def help(self, cmd: Optional[str] = None) -> None:
         print("Look, I'm working on it, OK?")
-    
+
     def exit(self) -> None:
         sys.exit()
-    
+
     def _handle_command(self, cmd: tuple) -> None:
         no_arg = {
             "play": self.play,
@@ -545,13 +553,15 @@ class WordleTrainer:
         elif command in with_arg:
             with_arg[command](argument)
         else:
-            raise RuntimeError(f"A strange command has made it past the gates: {command}??????")
+            raise RuntimeError(
+                f"A strange command has made it past the gates: {command}??????"
+            )
 
     @staticmethod
     def _tokenize_input(input_str: str) -> tuple:
         parts = input_str.partition(" ")
         return (parts[0].lower(), parts[-1].upper())
-    
+
     @staticmethod
     def _validate_index_token(tokens: tuple) -> bool:
         """
@@ -569,7 +579,7 @@ class WordleTrainer:
         """
         _, token = tokens
         return bool(token)
-    
+
     @staticmethod
     def _validate_no_token(tokens: tuple) -> bool:
         # I don't think this actually needs to do anything?
@@ -596,7 +606,7 @@ class WordleTrainer:
 
         command, token = input_tuple
         if command not in validators:
-            print("Sorry, I didn't understand that.")
+            print("That was not a known command.")
             return False
         elif not validators[command]((command, token)):
             return False
@@ -606,47 +616,32 @@ class WordleTrainer:
     def _get_valid_command_input(cls) -> tuple:
         valid = False
         while not valid:
-            usr_input = cls._tokenize_input(input(" > "))
+            usr_input = cls._tokenize_input(input("\n > "))
             valid = cls._validate_command_input(usr_input)
         return usr_input
 
     def input_loop(self) -> None:
-        usr_input = self._get_valid_command_input()
-        self._handle_command(usr_input)
-
+        print("Welcome to Wordleologist. What can I do for you?")
+        command, token = None, None
+        while command != "exit":
+            old_words = len(self.possible_words)
+            command, token = self._get_valid_command_input()
+            self._handle_command((command, token))
+            new_words = len(self.possible_words)
+            if new_words < old_words:
+                print(f"{new_words} possible words remain.")
 
 
 def test():
     w = WordleTrainer.new_random_wordle()
-    #print(w._validate_command_input("exit a--s-"))
+    # print(w._validate_command_input("exit a--s-"))
     print(w._get_valid_command_input())
-    
-    
-    # w.play()
-    #w.green("--o-e")
-    #w.gray("ars")
-    #w.yellow("---l-")
-    #w.gray("chid")
-    #w.get_clues()
-    #w.rich_print_prediction_str("LINTY")
-    #w.rich_print_prediction_str(w.find_best_guess_combined())
-    #print(f"{len(w.possible_words)} possible words")
-    #if len(w.possible_words) <= 20:
-    #    print(w.possible_words)
-    # w.rich_print_prediction_str("GOURD")
-    # print(w.possible_words)
-
-    # cr = ColorRange(min = 7, max = 23, min_color=OutputColor.YELLOW.value, max_color=OutputColor.GREEN.value)
-    # cr.demo()
-
-    #cb = ColorBox(upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value), lower_colors=(OutputColor.GRAY.value, OutputColor.GRAY.value))
-    #cb = ColorBox(upper_colors=((201, 180, 89), (106, 170, 101)), lower_colors=((120, 124, 126), (120, 124, 126)))
-    #cb.demo(30)
 
 
 def run_text_interface():
-    pass
+    w = WordleTrainer()
+    w.input_loop()
 
 
 if __name__ == "__main__":
-    test()
+    run_text_interface()
