@@ -49,7 +49,7 @@ If Wordleologist finds more than one word with the same expected value, it will 
 
 ![An example of suggested clues](https://github.com/phildavis17/wordleologist/blob/main/documentation/images/Clues.jpg)
 
-In the above example, each of the letters in 'CLINT' is a fairly dim color. While these letters are not particularly likely to occur in the target word, Wordleologist has found that getting information about these letters will help include or exclude the most words from the remaining pool.
+In the above example, each of the letters in 'CLINT' is a fairly dim color, though some are showing signs of life. While these letters are not particularly likely to occur in the target word, Wordleologist has found that getting information about these letters will help include or exclude the most words from the remaining pool.
 
 'TRANT' has a 'T' at the beginning and end, suggesting that many of the remaining words have a 'T' in one or both of those positions. This gives you a better chance of getting a green letter, but if they both end up being gray, you'll have missed out on gaining more information by including a different letter.
 

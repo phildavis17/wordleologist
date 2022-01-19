@@ -396,7 +396,7 @@ class WordleTrainer:
                 idx_freq = index_freq[i][c] / total_freq[c]
             prediction.extend(
                 [
-                    f"[{cb.rich_format_rgb(cb.color_from_positions(idx_freq, presence_freq))}]",
+                    f"[bold {cb.rich_format_rgb(cb.color_from_positions(idx_freq, presence_freq))}]",
                     c,
                     "[/]",
                 ]
@@ -636,15 +636,16 @@ class WordleTrainer:
         return usr_input
 
     def input_loop(self) -> None:
-        print("\nWordleologist at your service.")
+        rich.print(f"\n[{OutputStyle.GREEN.value}]Wordle[/][{OutputStyle.YELLOW.value}]ologist[/] at your service.")
         command, token = None, None
+        word_cr = ColorRange(min_color=OutputColor.GREEN.value, max_color=(193, 193, 193))
         while command != "exit":
             old_words = len(self.possible_words)
             command, token = self._get_valid_command_input()
             self._handle_command((command, token))
             new_words = len(self.possible_words)
             if new_words < old_words:
-                print(f"\n{new_words} possible words remain.", end="")
+                rich.print(f"\n[{word_cr.rich_format_rgb(word_cr.color_from_position(min(new_words/50, 1.0)))}]{new_words}[/] possible words remain.", end="")
 
 
 def test():
