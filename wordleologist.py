@@ -14,6 +14,8 @@ from typing import Optional, Tuple
 
 import rich
 
+from wordleologist_help import WORDLEOLOGIST_HELP
+
 SCRABBLE_WORDS_PATH = (
     Path(__file__).parent / "data" / "Collins Scrabble Words (2019).txt"
 )
@@ -528,8 +530,8 @@ class WordleTrainer:
         # How and where do I validate this?
         self.rich_print_prediction_str(guess)
 
-    def help(self, cmd: Optional[str] = None) -> None:
-        print("Look, I'm working on it, OK?")
+    def help(self, cmd: str) -> None:
+        print(WORDLEOLOGIST_HELP[cmd.lower()])
 
     def exit(self) -> None:
         sys.exit()
@@ -601,7 +603,8 @@ class WordleTrainer:
 
     @classmethod
     def _validate_help(cls, tokens: tuple) -> bool:
-        pass
+        _, token = tokens
+        return token.lower() in WORDLEOLOGIST_HELP
 
     @classmethod
     def _validate_command_input(cls, input_tuple: tuple) -> bool:
@@ -633,10 +636,13 @@ class WordleTrainer:
         while not valid:
             usr_input = cls._tokenize_input(input("\n > "))
             valid = cls._validate_command_input(usr_input)
+
         return usr_input
 
     def input_loop(self) -> None:
-        rich.print(f"\n[{OutputStyle.GREEN.value}]Wordle[/][{OutputStyle.YELLOW.value}]ologist[/] at your service.")
+        rich.print(f"\n[{OutputStyle.GREEN.value}]Wordle[/][{OutputStyle.YELLOW.value}]ologist[/] at your service.\n")
+        print("Enter 'help' for instructions")
+        print("Enter 'exit' to quit.")
         command, token = None, None
         word_cr = ColorRange(min_color=OutputColor.GREEN.value, max_color=(193, 193, 193))
         while command != "exit":
