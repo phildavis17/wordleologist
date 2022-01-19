@@ -1,8 +1,8 @@
 # Wordleologist
-Wordleologist is a tool designed to offer gentle [Wordle](https://www.powerlanguage.co.uk/wordle/) hints. Or, if you prefer, blunt ones.
+Wordleologist is an interactive command line tool designed as a companion to [Wordle](https://www.powerlanguage.co.uk/wordle/). It can offer gentle hints, or, if you prefer, blunt ones.
 
 ## Entering Information
-Let Wordleologist know how your game is going by telling it about the green, yellow, and gray letters you've seen. If the information you enter reduces the number of words that could be possible solutions to the puzzle, it will let you know the length of the new list.
+Let Wordleologist know how your game is going by telling it about the green, yellow, and gray letters you've seen. If the information you enter reduces the number of words that could be possible solutions to the puzzle, it will let you know how many possible words remain.
 
 ### Green or Yellow Letters
 Green or Yellow letters are tied to a specific location in the target word. In order to tell Wordleologist which letters you know are yellow or green, enter the command followed by a 5 character sequence containing letters at their correct positions separated by a space filling character. "-" is used as a space filling character in these examples, but any non-letter character will be treated the same way. The sequence you enter must be exactly 5 characters long.
