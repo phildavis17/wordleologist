@@ -201,6 +201,7 @@ class WordleTrainer:
         self.included: set = set()
         self.excluded: set = set()
         self.guessed_words: list = []
+        self.hardmode = False
 
     @classmethod
     def new_random_wordle(cls) -> "WordleTrainer":
@@ -237,6 +238,8 @@ class WordleTrainer:
         Returns a rich markup style to match the evaluation of a supplied character,
         and updates the known alphabet accordingly.
         """
+        if not self.target_word:
+            raise RuntimeError("You can't play if there's no target word!")
         if self.target_word[index] == guess_char:
             self.known_alphabet[guess_char] = OutputStyle.GREEN.value
             return OutputStyle.GREEN.value
@@ -355,9 +358,10 @@ class WordleTrainer:
 
     def exclude_at_index(self, index: int, bad_chars: str) -> None:
         """Removes the supplied characters from the set of possible characters at the supplied index,."""
-        self.possible_letters[index] = self.possible_letters[index].difference(
-            set(bad_chars)
-        )
+        if len(self.possible_letters[index]) > 1:
+            self.possible_letters[index] = self.possible_letters[index].difference(
+                set(bad_chars)
+            )
 
     def include(self, good_chars: str):
         """Adds supplied characters to the set of letters that must appear in the target word."""
@@ -402,12 +406,12 @@ class WordleTrainer:
     def rich_print_prediction_str(self, guess: str) -> None:
         rich.print(self._build_prediction_str(guess))
 
-    def find_best_guess_by_frequency(self, hardmode: bool = False):
+    def find_best_guess_by_frequency(self):
         """Returns the word with the highest frequency score that could also be the target word."""
         freq = self.frequencies
         best_score = 0
         best_guesses = []
-        if hardmode:
+        if self.hardmode:
             word_set = self.possible_words
         else:
             word_set = self.FIVE_LETTER_WORDS
@@ -435,7 +439,7 @@ class WordleTrainer:
             ]
         )
 
-    def find_best_guess_by_index(self, hardmode: bool = False) -> str:
+    def find_best_guess_by_index(self) -> str:
         """
         Returns a word that is expected to produce the most green letters.
         In the event of a tie, a word is chosen at random.
@@ -443,7 +447,7 @@ class WordleTrainer:
         freq = self.index_frequencies
         best_score = 0
         best_guess = []
-        if hardmode:
+        if self.hardmode:
             words = self.possible_words
         else:
             words = self.FIVE_LETTER_WORDS
@@ -461,12 +465,12 @@ class WordleTrainer:
             freq = self.index_frequencies
         return sum([freq[i][c] for i, c in enumerate(word)])
 
-    def find_best_guess_combined(self, hardmode: bool = False) -> str:
+    def find_best_guess_combined(self) -> str:
         freq = self.frequencies
         i_freq = self.index_frequencies
         best_score = 0
         best_guess = []
-        if hardmode:
+        if self.hardmode:
             words = self.possible_words
         else:
             words = self.FIVE_LETTER_WORDS
@@ -509,11 +513,11 @@ class WordleTrainer:
         info = self.find_best_guess_by_frequency()
         green = self.find_best_guess_by_index()
         balance = self.find_best_guess_combined()
-        print("Info: ", end="")
+        print("More Information: ", end="")
         self.rich_print_prediction_str(info)
-        print("Green: ", end="")
+        print("More Green Letters: ", end="")
         self.rich_print_prediction_str(green)
-        print("Balance: ", end="")
+        print("Balanced: ", end="")
         self.rich_print_prediction_str(balance)
 
     def get_words(self) -> None:
@@ -530,6 +534,13 @@ class WordleTrainer:
     def exit(self) -> None:
         sys.exit()
 
+    def toggle_hardmode(self) -> None:
+        self.hardmode = not self.hardmode
+        if self.hardmode:
+            print("hardmode is on.")
+        else:
+            print("hardmode is off.")
+
     def _handle_command(self, cmd: tuple) -> None:
         no_arg = {
             "play": self.play,
@@ -537,6 +548,7 @@ class WordleTrainer:
             "clues": self.get_clues,
             "words": self.get_words,
             "reset": self.reset,
+            "hardmode": self.toggle_hardmode,
         }
 
         with_arg = {
@@ -583,6 +595,8 @@ class WordleTrainer:
     @staticmethod
     def _validate_no_token(tokens: tuple) -> bool:
         # I don't think this actually needs to do anything?
+        # Bad commands are caught before this is invoked, and if there's no token there's nothing else to validate.
+        # I've left it in here, though, to keep the process symetrical for all command types.
         return True
 
     @classmethod
@@ -602,11 +616,12 @@ class WordleTrainer:
             "clues": cls._validate_no_token,
             "words": cls._validate_no_token,
             "reset": cls._validate_no_token,
+            "hardmode": cls._validate_no_token,
         }
 
         command, token = input_tuple
         if command not in validators:
-            print("That was not a known command.")
+            print(f"{command} is not a known command.")
             return False
         elif not validators[command]((command, token)):
             return False
@@ -621,7 +636,7 @@ class WordleTrainer:
         return usr_input
 
     def input_loop(self) -> None:
-        print("Welcome to Wordleologist. What can I do for you?")
+        print("\nWordleologist at your service.")
         command, token = None, None
         while command != "exit":
             old_words = len(self.possible_words)
@@ -629,7 +644,7 @@ class WordleTrainer:
             self._handle_command((command, token))
             new_words = len(self.possible_words)
             if new_words < old_words:
-                print(f"{new_words} possible words remain.")
+                print(f"\n{new_words} possible words remain.", end="")
 
 
 def test():
