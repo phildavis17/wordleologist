@@ -545,7 +545,7 @@ class WordleTrainer:
 
     def _handle_command(self, cmd: tuple) -> None:
         no_arg = {
-            "play": self.play,
+            # "play": self.play, # Play is not implimented yet.
             "exit": self.exit,
             "clues": self.get_clues,
             "words": self.get_words,
@@ -609,7 +609,7 @@ class WordleTrainer:
     @classmethod
     def _validate_command_input(cls, input_tuple: tuple) -> bool:
         validators = {
-            "play": cls._validate_no_token,
+            # "play": cls._validate_no_token, # play is not implimented yet.
             "help": cls._validate_help,
             "exit": cls._validate_no_token,
             "test": cls._validate_index_token,
@@ -627,6 +627,7 @@ class WordleTrainer:
             print(f"{command} is not a known command.")
             return False
         elif not validators[command]((command, token)):
+            print("Something was wasn't quite right with that input. Try again.")
             return False
         return True
 
