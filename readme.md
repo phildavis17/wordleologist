@@ -26,15 +26,13 @@ Since gray letters are (usually) not tied to a specific position in the word, yo
 This will eliminate all words that contain 'o', 's', or 'e'.
 
 ## Testing Guesses
-Wordleologist allows you to test out the expected strength of a guess. By testing a number of guesses, you can start to get a sense of the territory.
+Wordleologist allows you to test out the expected strength of a guess. By testing a number of guesses, Wordleologist can help guide you towards more useful guesses.
 
 ![An example of guess testing](https://github.com/phildavis17/wordleologist/blob/main/documentation/images/Test.jpg)
 
 Wordleologist will then print out the guess, coloring each letter according its frequency in the pool of remaining possible words. If a letter does not occur often in possible words, it will be more gray. If it occurs in many possible words, but not at that position, it will be more yellow. If it occurs often at that position, it will be more green.
 
 In the above example, the 'R' and 'A' are very common in these positions in the remaining possilbe words, while the other letters are less common.
-
-
 
 ## Getting Suggested Guesses
 Entering `clues` will produce a list of three suggested high-value guesses, each printed with colors to show the expected outcome of each letter. These guesses come in three flavors:
@@ -70,3 +68,6 @@ If you'd like to start over, enter `reset`. This returns Wordleologist to its in
 
 ## Exiting
 When you're done, enter `exit`.
+
+## A Note on the Word List
+Wordleologist bases its estimates on the full list of accepted 5 letter Scrabble words, which includes a lot of uncommon words. While I have yet to encounter a Scrabble word that Wordle rejects as a guess, Wordle seems to be pulling its target words from a much smaller list of more common words. Comparing against the Wordle list would be more accurate, but I have not yet found a canonical list of Wordle words. Rather than making assumptions, I've stuck to the Scrabble list. It still works pretty well.

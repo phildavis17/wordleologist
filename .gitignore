@@ -154,3 +154,5 @@ cython_debug/
 # Custom
 scratch*
 archive/
+config.yml
+demo.yml
