@@ -32,6 +32,8 @@ Wordleologist allows you to test out the expected strength of a guess.
 ```
 Wordleologist will then print out the guess, coloring each letter according its frequency in the pool of remaining possible words. If a letter does not occur often in possible words, it will be more gray. If it occurs in many possible words, but not at that position, it will be more yellow. If it occurs often at that position, it will be more green. 
 
+![An example of guess testing](https://github.com/phildavis17/wordleologist/blob/main/documentation/images/Test.jpg)
+
 ## Getting Suggested Guesses
 Entering `clues` will produce a list of three suggested high-value guesses. These guesses come in three flavors:
 
