@@ -176,19 +176,7 @@ class WordleTrainer:
         "win": "\nCongratulations!",
         "lose": "\nBetter luck next time!",
     }
-    UI_COMMANDS = {
-        "play",
-        "help",
-        "exit",
-        "test",
-        "green",
-        "yellow",
-        "gray",
-        "clues",
-        "words",
-        "reset",
-    }
-
+    
     def __init__(self, target_word: Optional[str] = None) -> None:
         # The actual setup stuff has been moved to sel.reset to reduce code duplication.
         self.reset()
