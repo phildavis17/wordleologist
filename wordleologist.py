@@ -8,7 +8,6 @@ import string
 import sys
 from collections import Counter
 from enum import Enum
-from hashlib import new
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -640,18 +639,25 @@ class WordleTrainer:
         return usr_input
 
     def input_loop(self) -> None:
-        rich.print(f"\n[{OutputStyle.GREEN.value}]Wordle[/][{OutputStyle.YELLOW.value}]ologist[/] at your service.\n")
+        rich.print(
+            f"\n[{OutputStyle.GREEN.value}]Wordle[/][{OutputStyle.YELLOW.value}]ologist[/] at your service.\n"
+        )
         print("Enter 'help' for instructions")
         print("Enter 'exit' to quit.")
         command, token = None, None
-        word_cr = ColorRange(min_color=OutputColor.GREEN.value, max_color=(193, 193, 193))
+        word_cr = ColorRange(
+            min_color=OutputColor.GREEN.value, max_color=(193, 193, 193)
+        )
         while command != "exit":
             old_words = len(self.possible_words)
             command, token = self._get_valid_command_input()
             self._handle_command((command, token))
             new_words = len(self.possible_words)
             if new_words < old_words:
-                rich.print(f"\n[{word_cr.rich_format_rgb(word_cr.color_from_position(min(new_words/50, 1.0)))}]{new_words}[/] possible words remain.", end="")
+                rich.print(
+                    f"\n[{word_cr.rich_format_rgb(word_cr.color_from_position(min(new_words/50, 1.0)))}]{new_words}[/] possible words remain.",
+                    end="",
+                )
 
 
 def test():
