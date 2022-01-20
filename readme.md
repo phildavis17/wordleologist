@@ -1,4 +1,7 @@
 # Wordleologist
+
+![A recorded demo of Wordleologist in use](https://github.com/phildavis17/wordleologist/blob/main/documentation/Demo.gif)
+
 Wordleologist is an interactive command line tool designed as a companion to [Wordle](https://www.powerlanguage.co.uk/wordle/). It can offer gentle hints, or, if you prefer, blunt ones.
 
 Running Wordleologist will start an interactive session.
