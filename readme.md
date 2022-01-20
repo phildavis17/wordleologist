@@ -3,7 +3,7 @@ Wordleologist is an interactive command line tool designed as a companion to [Wo
 
 Running Wordleologist will start an interactive session.
 
-![The Wordleologist Greeting]
+![The Wordleologist Greeting](https://github.com/phildavis17/wordleologist/blob/main/documentation/images/Greeting.jpg)
 
 ## Entering Information
 Let Wordleologist know how your game is going by telling it about the green, yellow, and gray letters you've seen. If the information you enter reduces the number of words that could be possible solutions to the puzzle, it will let you know how many possible words remain.
