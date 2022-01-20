@@ -1,6 +1,10 @@
 # Wordleologist
 Wordleologist is an interactive command line tool designed as a companion to [Wordle](https://www.powerlanguage.co.uk/wordle/). It can offer gentle hints, or, if you prefer, blunt ones.
 
+Running Wordleologist will start an interactive session.
+
+![The Wordleologist Greeting]
+
 ## Entering Information
 Let Wordleologist know how your game is going by telling it about the green, yellow, and gray letters you've seen. If the information you enter reduces the number of words that could be possible solutions to the puzzle, it will let you know how many possible words remain.
 
