@@ -5,6 +5,8 @@ Running Wordleologist will start an interactive session.
 
 ![The Wordleologist Greeting](https://github.com/phildavis17/wordleologist/blob/main/documentation/images/Greeting.jpg)
 
+From here, you can enter the information you've learned, and ask for help in a few ways.
+
 ## Entering Information
 Let Wordleologist know how your game is going by telling it about the green, yellow, and gray letters you've seen. If the information you enter reduces the number of words that could be possible solutions to the puzzle, it will let you know how many possible words remain.
 

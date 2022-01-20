@@ -637,7 +637,6 @@ class WordleTrainer:
         while not valid:
             usr_input = cls._tokenize_input(input("\n > "))
             valid = cls._validate_command_input(usr_input)
-
         return usr_input
 
     def input_loop(self) -> None:
