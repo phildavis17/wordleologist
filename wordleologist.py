@@ -178,7 +178,7 @@ class WordleTrainer:
     }
     
     def __init__(self, target_word: Optional[str] = None) -> None:
-        # The actual setup stuff has been moved to sel.reset to reduce code duplication.
+        # The actual setup stuff has been moved to self.reset to reduce code duplication.
         self.reset()
 
     def reset(self, target_word: Optional[str] = None) -> None:
@@ -611,10 +611,10 @@ class WordleTrainer:
 
         command, token = input_tuple
         if command not in validators:
-            print(f"{command} is not a known command.")
+            rich.print(f"[bold red]{command} is not a known command.[/]")
             return False
         elif not validators[command]((command, token)):
-            print("Something was wasn't quite right with that input. Try again.")
+            rich.print("[bold red]Something was wasn't quite right with that input. Try again.[/]")
             return False
         return True
 
