@@ -67,7 +67,7 @@ class ColorRange:
         return f"rgb({r},{g},{b})"
 
     def demo(self, count: int = 10) -> None:
-        """Prints a"""
+        """Prints a grid of characters demonstrating the current state of the ColorRange object."""
         start = self.min
         stop = self.max
         print(repr(self))
@@ -107,12 +107,14 @@ class ColorBox:
         self.lower_range = ColorRange(self.x_min, self.x_max, lower_start, lower_stop)
 
     def color_from_numbers(self, x: int, y: int) -> Tuple[int, int, int]:
+        """Returns a color tuple (r, g, b) by interpolating the supplied x and y numbers within the assigned ranges."""
         upper = self.upper_range.color_from_number(x)
         lower = self.lower_range.color_from_number(x)
         vertical = ColorRange(self.y_min, self.y_max, lower, upper)
         return vertical.color_from_number(y)
 
     def color_from_positions(self, x: float, y: float) -> Tuple[int, int, int]:
+        """Returns a color tuple (r, g, b) by interpolating the supplied position floats."""
         upper = self.upper_range.color_from_position(x)
         lower = self.lower_range.color_from_position(x)
         vertical = ColorRange(self.y_min, self.y_max, lower, upper)
@@ -125,6 +127,7 @@ class ColorBox:
         return f"rgb({r},{g},{b})"
 
     def demo(self, count: int = 10) -> None:
+        """Prints a bunch of characters demonstrating the state of the ColorBox."""
         for y in range(count):
             y_pos = y / (count - 1)
             row = []
@@ -182,6 +185,10 @@ class WordleTrainer:
         self.reset()
 
     def reset(self, target_word: Optional[str] = None) -> None:
+        """
+        Sets all the attributes of a Wordleologist object to their initial state.
+        This method is called by __init__ to set up fresh objects.
+        """
         self.target_word = target_word
         self.possible_letters = {x: set(string.ascii_uppercase) for x in range(5)}
         self.known_alphabet = {
@@ -257,6 +264,7 @@ class WordleTrainer:
         return guess
 
     def play(self) -> None:
+        """Enters the play game loop."""
         print("Welcome to wordleologist!\n")
         while (
             self.target_word not in self.guessed_words and len(self.guessed_words) < 6
@@ -275,6 +283,10 @@ class WordleTrainer:
             print("Better luck next time!")
 
     def _build_alphabet_string(self) -> str:
+        """
+        Returns a rich formatted string of the alphabet where the style of each letter reflects
+        the best information available for that letter in the current game state.
+        """
         styled_alpha = ["\n"]
         for char, style in self.known_alphabet.items():
             styled_alpha.extend([f"[{style}]", char, "[/] "])
@@ -285,6 +297,7 @@ class WordleTrainer:
 
     @staticmethod
     def clear_console():
+        """Clears the console. Design to handle both Windows and UNIX-like systems."""
         if os.name == "nt":
             os.system("cls")
         else:
@@ -317,6 +330,10 @@ class WordleTrainer:
 
     @property
     def index_frequencies(self) -> dict:
+        """
+        Returns a dictionary in the form {index: Counter} where the Counter contains counts of each letter that occurs at that index
+        in the pool of remaining possible words.
+        """
         return {i: Counter(chars) for i, chars in enumerate(zip(*self.possible_words))}
 
     @staticmethod
@@ -369,6 +386,12 @@ class WordleTrainer:
         self.included.add(char)
 
     def _build_prediction_str(self, guess: str) -> str:
+        """
+        Uses a ColorBox to generate a color for each letter in the supplied guess by interpolating along two axes:
+         - Index Frequency: The frequency with which this letter occurs at this index in remaining words vs at some other index (green vs yellow)
+         - Presence Frequency: The frequency with which this letter occurs in remaining words vs does not occur (colorful vs gray)
+        Returns a rich formatted string. 
+        """
         cb = ColorBox(
             upper_colors=(OutputColor.YELLOW.value, OutputColor.GREEN.value),
             lower_colors=(OutputColor.GRAY.value, OutputColor.GRAY.value),
@@ -455,6 +478,11 @@ class WordleTrainer:
         return sum([freq[i][c] for i, c in enumerate(word)])
 
     def find_best_guess_combined(self) -> str:
+        """
+        Checks all available words for the frequency with which their letters are present in the remaining word pool,
+        and also their likelihood to yeild green letters, returning a word with the maximum score.
+        In the event of a tie, a word is chosen at random.
+        """
         freq = self.frequencies
         i_freq = self.index_frequencies
         best_score = 0
@@ -493,6 +521,10 @@ class WordleTrainer:
         pass
 
     def _process_char_assignment_str(self, input_str: str) -> dict:
+        """
+        Creates and returns a dictionary in the form {index: letter} for the letters in a supplied string.
+        Ignores non-letter characters.
+        """
         return {
             i: c.upper() for i, c in enumerate(input_str) if c in string.ascii_letters
         }
@@ -518,12 +550,18 @@ class WordleTrainer:
         self.rich_print_prediction_str(guess)
 
     def help(self, cmd: str) -> None:
+        """Prints help text for the supplied command."""
         print(WORDLEOLOGIST_HELP[cmd.lower()])
 
     def exit(self) -> None:
+        """
+        Exits the program. This is not currently used.
+        Instead, the text 'exit' ends the while loop that drives the interface.
+        """
         sys.exit()
 
     def toggle_hardmode(self) -> None:
+        """Toggles hardmode on or off."""
         self.hardmode = not self.hardmode
         if self.hardmode:
             print("hardmode is on.")
@@ -531,6 +569,8 @@ class WordleTrainer:
             print("hardmode is off.")
 
     def _handle_command(self, cmd: tuple) -> None:
+        """Calls the method associated with supplied input commands."""
+        # Commands that do not require any additional information are in this dict.
         no_arg = {
             # "play": self.play, # Play is not implimented yet.
             "exit": self.exit,
@@ -539,7 +579,7 @@ class WordleTrainer:
             "reset": self.reset,
             "hardmode": self.toggle_hardmode,
         }
-
+        # Commands that require additional information are in this dict.
         with_arg = {
             "help": self.help,
             "test": self.test,
@@ -560,6 +600,7 @@ class WordleTrainer:
 
     @staticmethod
     def _tokenize_input(input_str: str) -> tuple:
+        """Breaks an input string into two pieces, before and after the first space (' ') encountered."""
         parts = input_str.partition(" ")
         return (parts[0].lower(), parts[-1].upper())
 
@@ -590,11 +631,13 @@ class WordleTrainer:
 
     @classmethod
     def _validate_help(cls, tokens: tuple) -> bool:
+        """Returns True if the supplied token is a key in the dict of help commands."""
         _, token = tokens
         return token.lower() in WORDLEOLOGIST_HELP
 
     @classmethod
     def _validate_command_input(cls, input_tuple: tuple) -> bool:
+        """Dispatches input to the appropriate validator."""
         validators = {
             # "play": cls._validate_no_token, # play is not implimented yet.
             "help": cls._validate_help,
@@ -620,6 +663,7 @@ class WordleTrainer:
 
     @classmethod
     def _get_valid_command_input(cls) -> tuple:
+        """Prompts the user for input until a valid command is entered."""
         valid = False
         while not valid:
             usr_input = cls._tokenize_input(input("\n > "))
